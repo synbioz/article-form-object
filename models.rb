@@ -7,9 +7,9 @@ class Avatar
 
   attr_reader :filename
 
-  def initialize(file)
+  def initialize(file, filename)
     file_content   = file.read
-    file_extension = File.extname file.path
+    file_extension = File.extname filename
     content_hash   = Digest::SHA2.hexdigest file_content
     @filename = content_hash + file_extension
     write!(file_content)
