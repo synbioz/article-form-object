@@ -1,5 +1,6 @@
 require 'sinatra'
 require_relative 'models'
+require_relative 'form_objects'
 
 # Use in memory arrays instead of a persistence layer
 $avatars = []
@@ -25,19 +26,10 @@ end
 
 # Submit a new post
 post '/' do
-  new_avatar      = params[:new_avatar]
-  existing_avatar = params[:existing_avatar]
-
-  if existing_avatar != ""
-    avatar_index = existing_avatar.to_i
-    avatar = $avatars[avatar_index]
-  elsif new_avatar[:tempfile]
-    avatar = Avatar.new new_avatar[:tempfile], new_avatar[:filename]
-  end
-
-  if avatar
-    $avatars << avatar
-    $posts   << Post.new(params[:author], avatar, params[:content])
+  form_object = CreatePostForm.new(params)
+  if form_object.success?
+    $avatars << form_object.avatar
+    $posts   << form_object.post
     redirect to("/view/#{$posts.size - 1}")
   else
     redirect to('/new') # TODO: Add an error message
