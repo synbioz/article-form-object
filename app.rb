@@ -1,5 +1,6 @@
 require 'sinatra'
 require_relative 'models'
+require_relative 'models_validations'
 
 # Use in memory arrays instead of a persistence layer
 $avatars = []
@@ -23,21 +24,25 @@ get '/view/:id' do
   erb :view
 end
 
+def avatar_from_params(params)
+  if (id = params[:existing_avatar]) != ""
+    $avatars[id.to_i]
+  else
+    file     = params[:new_avatar][:tempfile]
+    filename = params[:new_avatar][:filename]
+    Avatar.new(file, filename)
+  end
+rescue
+  nil
+end
+
 # Submit a new post
 post '/' do
-  new_avatar      = params[:new_avatar]
-  existing_avatar = params[:existing_avatar]
-
-  if existing_avatar != ""
-    avatar_index = existing_avatar.to_i
-    avatar = $avatars[avatar_index]
-  elsif new_avatar[:tempfile]
-    avatar = Avatar.new new_avatar[:tempfile], new_avatar[:filename]
-  end
-
-  if avatar
+  avatar = avatar_from_params(params)
+  post   = Post.new(params[:author], avatar, params[:content])
+  if post.valid?
     $avatars << avatar
-    $posts   << Post.new(params[:author], avatar, params[:content])
+    $posts   << post
     redirect to("/view/#{$posts.size - 1}")
   else
     redirect to('/new') # TODO: Add an error message
